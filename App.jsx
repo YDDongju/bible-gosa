@@ -2681,6 +2681,37 @@ const SERIF = "'Nanum Myeongjo','Noto Serif KR','AppleMyungjo','Batang',serif";
 const NUM = "'Cormorant Garamond','Nanum Myeongjo',serif";
 const SANS = "'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif"; // 문제 발문·보기 (인쇄본의 고딕체)
 
+/* ▼ 성경고사 D-day — 시험일: 2026년 11월 10일 (기기 시간 기준, 자정마다 자동 갱신) */
+const EXAM_DATE = { y: 2026, m: 11, d: 10 };
+function daysToExam(now = new Date()) {
+  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  const exam = Date.UTC(EXAM_DATE.y, EXAM_DATE.m - 1, EXAM_DATE.d);
+  return Math.round((exam - today) / 86400000);
+}
+function DDay() {
+  const [left, setLeft] = useState(() => daysToExam());
+  useEffect(() => {
+    const tick = () => setLeft(daysToExam());
+    const id = setInterval(tick, 60000);
+    document.addEventListener("visibilitychange", tick);   // 홈 화면 앱을 다시 열 때 갱신
+    return () => { clearInterval(id); document.removeEventListener("visibilitychange", tick); };
+  }, []);
+  if (left < 0) return null;                                 // 시험이 끝나면 숨김
+  const label = left === 0 ? "D-DAY" : `D-${left}`;
+  return (
+    <span aria-label={left === 0 ? "오늘 성경고사" : `성경고사까지 ${left}일`}
+      title="성경고사 11월 10일"
+      style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 26, padding: "0 10px",
+        borderRadius: 4, border: `1px solid ${C.goldHi}`,
+        background: left === 0 ? `linear-gradient(180deg, #F3DE9C, ${C.goldHi})` : `linear-gradient(180deg, ${C.goldHi}, ${C.gold})`,
+        boxShadow: "0 0 12px rgba(230,203,126,.35)",
+        color: C.navyDeep, fontFamily: SANS, fontSize: 15, fontWeight: 700, letterSpacing: ".02em",
+        fontVariantNumeric: "lining-nums tabular-nums", lineHeight: 1, whiteSpace: "nowrap", transform: "translateY(-1px)" }}>
+      {label}
+    </span>
+  );
+}
+
 const STORAGE_KEY = "gosa:bookmarks:v1";
 const NIGHT_KEY = "gosa:night:v1";
 
@@ -3016,7 +3047,10 @@ export default function App() {
           borderBottom: "1px solid rgba(200,162,75,.35)", position: "relative" }}>
           <div style={{ filter: "drop-shadow(0 0 14px rgba(230,203,126,.25))" }}><StainedWindow size={50} /></div>
           <div style={{ lineHeight: 1.2, paddingBottom: 2 }}>
-            <h1 style={{ margin: 0, fontSize: 30, fontWeight: 800, letterSpacing: ".18em", color: C.goldHi }}>성경고사</h1>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <h1 style={{ margin: 0, fontSize: 30, fontWeight: 800, letterSpacing: ".18em", color: C.goldHi }}>성경고사</h1>
+              <DDay />
+            </div>
             <div style={{ marginTop: 7, fontSize: 14, color: C.parchDk, fontWeight: 700 }}>
               {appMode === "recite" ? "암송 훈련" : cross ? "북마크 모음" : book.name}
               <span style={{ marginLeft: 10, fontSize: 12.5, fontWeight: 400, color: C.mistDim, display: appMode === "recite" ? "none" : "inline" }}>
