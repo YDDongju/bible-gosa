@@ -3588,11 +3588,13 @@ function MarkSection({ pool, curId, marks, onPick, onMark, maxHeight }) {
 /* 구절 목록 (구절 선택 · 다음 구절 고르기 공통) — ○ △ ✕ 표시 */
 function VerseGrid({ pool, curId, marks, onPick, onCycle, maxHeight = 260 }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(136px, 1fr))", gap: 6, maxHeight, overflowY: "auto" }}>
+    /* 아이폰 사파리 : 높이 제한이 걸린 그리드 안에서 칸이 눌려 찌그러지는 문제 → 스크롤 상자와 그리드를 분리하고 칸 높이 고정 */
+    <div style={{ maxHeight, overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(136px, 1fr))", gridAutoRows: "minmax(42px, auto)", alignContent: "start", gap: 6 }}>
       {pool.slice().sort((a, b) => (a.ot === b.ot ? a.no - b.no : a.ot ? -1 : 1)).map((v) => {
         const a = accOf(v.ot), isCur = curId === v.id, mk = marks[v.id];
         return (
-          <div key={v.id} style={{ display: "flex", alignItems: "stretch", borderRadius: 4, overflow: "hidden",
+          <div key={v.id} style={{ display: "flex", alignItems: "stretch", minHeight: 42, boxSizing: "border-box", borderRadius: 4, overflow: "hidden",
             border: `1px solid ${isCur ? a.main : a.chip}`, background: isCur ? C.parch : "transparent" }}>
             <button onClick={() => onCycle && onCycle(v.id)} disabled={!onCycle}
               aria-label={`${v.full} 표시 바꾸기 (지금: ${mk ? RATE[mk].label : "없음"})`}
@@ -3609,6 +3611,7 @@ function VerseGrid({ pool, curId, marks, onPick, onCycle, maxHeight = 260 }) {
           </div>
         );
       })}
+    </div>
     </div>
   );
 }
