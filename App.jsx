@@ -2828,20 +2828,20 @@ function BookmarkIcon({ filled, color, size = 14 }) {
   );
 }
 
-function ShuffleIcon() {
+function ShuffleIcon({ color = C.goldHi }) {
   return (
     <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden style={{ display: "block" }}>
-      <g fill="none" stroke={C.goldHi} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <g fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
         <path d="M1.5 4 h2.6 c2.2 0 3.4 8 6 8 h3.4" /><path d="M1.5 12 h2.6 c1 0 1.7-1.6 2.3-3.2" />
         <path d="M9.4 6.4 C9.9 5 10.6 4 11.4 4 h2.1" /><path d="M11.8 2 L13.8 4 L11.8 6" /><path d="M11.8 10 L13.8 12 L11.8 14" />
       </g>
     </svg>
   );
 }
-function ResetIcon() {
+function ResetIcon({ color = C.goldHi }) {
   return (
     <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden style={{ display: "block" }}>
-      <g fill="none" stroke={C.goldHi} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <g fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
         <path d="M3.2 6.2 A5.2 5.2 0 1 1 3 9.6" /><path d="M2.6 2.8 V6.4 H6.2" />
       </g>
     </svg>
@@ -3446,37 +3446,14 @@ const RATE = {
 };
 
 /* 단계 훈련 구성 : 1 초성 힌트 · 2 첫 글자 힌트 · 3 단서 외우기 (각 레벨 1~3) · 4 통암기 */
-const STEPS = [[1, "초성 힌트"], [2, "첫 글자 힌트"], [3, "단서 외우기"], [4, "통암기"]];
+const STEPS = [[1, "초성"], [2, "첫 글자"], [3, "단서"], [4, "통암기"]];
 const RECITE_LV_KEY = "gosa:recite-lv:v1";
 const LEVEL_DESC = {
   1: { 1: "모든 어절에 초성", 2: "어절 두 개 중 하나만 초성", 3: "어절 세 개 중 하나만 초성" },
   2: { 1: "모든 어절에 첫 글자", 2: "어절 두 개 중 하나만 첫 글자", 3: "어절 세 개 중 하나만 첫 글자" },
-  3: { 1: "덩어리 중간중간에도 단서", 2: "두 덩어리마다 첫 단서", 3: "절마다 첫 단서 하나만" },
+  3: { 1: "세 어절마다 단서 (단서 많음)", 2: "의미 덩어리마다 첫 단서", 3: "절마다 첫 단서 하나만" },
 };
 
-function LevelBar({ step, level, onChange, acc }) {
-  return (
-    <div className="dim" style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-      <div role="radiogroup" aria-label="난이도" style={{ display: "flex", border: "1px solid rgba(200,162,75,.45)", borderRadius: 999, overflow: "hidden" }}>
-        {[1, 2, 3].map((lv) => {
-          const on = level === lv;
-          return (
-            <button key={lv} role="radio" aria-checked={on} onClick={() => onChange(lv)}
-              style={{ fontFamily: "inherit", fontWeight: 800, fontSize: 12.5, padding: "6px 13px", border: 0, cursor: "pointer",
-                display: "flex", alignItems: "center", gap: 4,
-                background: on ? `linear-gradient(180deg, ${C.goldHi}, ${C.gold})` : "transparent", color: on ? C.navyDeep : C.mist }}>
-              레벨 <span style={{ fontFamily: NUM, fontSize: 15 }}>{lv}</span>
-            </button>
-          );
-        })}
-      </div>
-      <span style={{ flexBasis: "100%", fontSize: 12.5, color: C.mist, display: "flex", alignItems: "center", gap: 6 }}>
-        <span aria-hidden style={{ letterSpacing: 1, color: C.goldHi }}>{"●".repeat(level)}<span style={{ opacity: .3 }}>{"●".repeat(3 - level)}</span></span>
-        {LEVEL_DESC[step][level]}
-      </span>
-    </div>
-  );
-}
 
 const RECITE_MARK_KEY = "gosa:recite-mark:v1";
 const MARK = { good: { color: "#4FB286", dark: "#2F7A58" }, hard: { color: "#E8C04A", dark: "#A87A1A" }, again: { color: "#E0606E", dark: "#A8343F" } };
@@ -3494,65 +3471,142 @@ function MarkIcon({ r, size = 13, onLight = false }) {
   );
 }
 
-/* 현재 구절 표시줄 (구절 선택 버튼 옆) */
-function VersePill({ v, mark }) {
+/* 현재 구절 표시줄 = 구절 선택 버튼 (누르면 구절 목록이 열림) */
+function VersePill({ v, mark, open, onClick }) {
   const a = accOf(v.ot);
   return (
-    <div aria-live="polite" aria-label={`지금 구절 ${v.full}`}
-      style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 9, padding: "6px 12px 6px 7px", borderRadius: 999,
-        background: "rgba(247,241,227,.07)", border: `1.5px solid ${a.main}` }}>
+    <button onClick={onClick} aria-expanded={open} aria-label={`지금 구절 ${v.full}${mark ? ` (${RATE[mark].label})` : ""} · 구절 선택`}
+      style={{ width: "100%", fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, padding: "6px 8px 6px 6px",
+        borderRadius: 999, background: open ? "rgba(230,203,126,.12)" : "rgba(247,241,227,.07)", border: `1.5px solid ${a.main}`, textAlign: "left" }}>
       <span style={{ flexShrink: 0, fontSize: 11.5, fontWeight: 800, padding: "3px 8px", borderRadius: 999,
         background: a.main, color: v.ot ? C.navyDeep : "#FBF6EA" }}>
         {v.ot ? "구약" : "신약"} <span style={{ fontFamily: NUM, fontSize: 14 }}>{v.no}</span>
       </span>
-      <span style={{ fontSize: 17, fontWeight: 800, color: v.ot ? C.goldHi : a.onDark, letterSpacing: ".02em",
+      <span style={{ minWidth: 0, fontSize: 17, fontWeight: 800, color: v.ot ? C.goldHi : a.onDark, letterSpacing: ".02em",
         whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
         {v.bookFull} <span style={{ fontFamily: NUM, fontSize: 21 }}>{v.cv}</span>
       </span>
-      {mark && <span style={{ marginLeft: "auto", flexShrink: 0 }}><MarkIcon r={mark} size={16} /></span>}
+      {mark && <MarkBadge r={mark} size={24} />}
+      <span style={{ marginLeft: "auto", flexShrink: 0, display: "flex", alignItems: "center", gap: 3, fontSize: 12.5, fontWeight: 800,
+        color: open ? C.navyDeep : C.goldHi, background: open ? C.goldHi : "transparent", border: `1px solid rgba(230,203,126,.55)`,
+        borderRadius: 999, padding: "4px 9px" }}>
+        구절 선택
+        <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden style={{ transform: open ? "rotate(180deg)" : "none" }}>
+          <path d="M1.5 3.2 5 6.8 8.5 3.2" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </span>
+    </button>
+  );
+}
+function PickerButton({ open, onClick }) {
+  return (
+    <button className={`tool ${open ? "on" : ""}`} onClick={onClick} aria-expanded={open} style={{ alignSelf: "flex-start" }}>구절 선택</button>
+  );
+}
+/* 색이 채워진 동그라미 안에 ○ △ ✕ — 크게 보이게 */
+function MarkBadge({ r, size = 22 }) {
+  const m = MARK[r];
+  return (
+    <span role="img" aria-label={RATE[r].label}
+      style={{ flexShrink: 0, width: size, height: size, borderRadius: "50%", background: m.color, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+      <svg width={size * .62} height={size * .62} viewBox="0 0 16 16" aria-hidden style={{ display: "block" }}>
+        <g fill="none" stroke="#0B1530" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+          {r === "good" && <circle cx="8" cy="8" r="5.4" />}
+          {r === "hard" && <path d="M8 2.6 13.8 13H2.2Z" />}
+          {r === "again" && <path d="M3.6 3.6l8.8 8.8M12.4 3.6l-8.8 8.8" />}
+        </g>
+      </svg>
+    </span>
+  );
+}
+/* 구절 선택 창 : 범위(구약·신약·전체) + 표시 범례 + 구절 목록 */
+const SCOPES = [["ot", "구약"], ["nt", "신약"], ["all", "전체"]];
+function PickerPanel({ scope, setScope, pool, curId, marks, onPick, onMark, note }) {
+  return (
+    <div style={{ padding: "12px 12px 13px", background: "rgba(255,255,255,.03)", border: "1px solid rgba(200,162,75,.3)", borderRadius: 4,
+      display: "flex", flexDirection: "column", gap: 9 }}>
+      <div role="group" aria-label="범위" style={{ display: "flex", gap: 6 }}>
+        {SCOPES.map(([k, label]) => {
+          const on = scope === k;
+          const n = RECITE.filter((v) => (k === "all" ? true : k === "ot" ? v.ot : !v.ot)).length;
+          const a = accOf(k !== "nt");
+          return (
+            <button key={k} onClick={() => setScope(k)} aria-pressed={on}
+              style={{ flex: 1, fontFamily: "inherit", fontWeight: 800, fontSize: 13.5, padding: "8px 4px", borderRadius: 4, cursor: "pointer",
+                background: on ? C.parch : "transparent", color: on ? C.ink : (k === "nt" ? a.onDark : C.mist),
+                border: `1px solid ${on ? (k === "all" ? C.gold : a.main) : "rgba(200,162,75,.3)"}` }}>
+              {label} <span style={{ fontFamily: SANS, fontSize: 13, fontWeight: 700, opacity: .8, fontVariantNumeric: "lining-nums" }}>{n}</span>
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ fontSize: 12.5, color: C.mist }}>{note}</div>
+      <MarkSection pool={pool} curId={curId} marks={marks} onPick={onPick} onMark={onMark} />
     </div>
   );
 }
-function PickIcon({ on }) {
+/* 플립 카드 도구 버튼 (색 구분) */
+const TONES = {
+  blue: { bg: "rgba(111,155,224,.16)", bd: "rgba(111,155,224,.55)", fg: "#9DBDF0", onBg: "#9DBDF0", onFg: "#0B1530" },
+  ivory: { bg: "rgba(232,223,201,.08)", bd: "rgba(232,223,201,.4)", fg: "#D8D1C0", onBg: "#D8D1C0", onFg: "#0B1530" },
+  rose: { bg: "rgba(201,94,110,.18)", bd: "rgba(201,94,110,.6)", fg: "#F0A0AB", onBg: "#F0A0AB", onFg: "#3A0F18" },
+};
+function ToolChip({ tone, on, onClick, ariaPressed, children }) {
+  const t = TONES[tone];
   return (
-    <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden style={{ display: "block" }}>
-      <g fill="none" stroke={on ? C.navyDeep : C.goldHi} strokeWidth="1.6" strokeLinecap="round"><path d="M2 3.5h12M2 8h12M2 12.5h7" /></g>
-    </svg>
+    <button onClick={onClick} aria-pressed={ariaPressed}
+      style={{ fontFamily: "inherit", fontWeight: 800, fontSize: 11.5, padding: "6px 7px", borderRadius: 999, cursor: "pointer",
+        display: "inline-flex", alignItems: "center", gap: 3, whiteSpace: "nowrap",
+        background: on ? t.onBg : t.bg, color: on ? t.onFg : t.fg, border: `1px solid ${t.bd}` }}>
+      {children}
+    </button>
   );
 }
 
 /* 표시 범례 + 표시 지우기 */
-function MarkLegend({ marks, onClear }) {
+/* 표시 바꾸기 : 빈칸 → ○ → △ → ✕ → 빈칸 */
+const MARK_CYCLE = [null, "good", "hard", "again"];
+const nextMark = (r) => MARK_CYCLE[(MARK_CYCLE.indexOf(r || null) + 1) % MARK_CYCLE.length];
+const setMark = (m, id, r) => { const n = { ...m }; if (r) n[id] = r; else delete n[id]; return n; };
+
+/* 표시 범례 + 구절 목록 — 구절 왼쪽 동그라미를 누를 때마다 ○ → △ → ✕ → 빈칸 */
+function MarkSection({ pool, curId, marks, onPick, onMark, maxHeight }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", fontSize: 12.5, color: C.mist, marginBottom: 9 }}>
-      {["good", "hard", "again"].map((r) => (
-        <span key={r} style={{ display: "flex", alignItems: "center", gap: 4 }}><MarkIcon r={r} size={13} />{RATE[r].label}</span>
-      ))}
-      {Object.keys(marks).length > 0 && (
-        <button onClick={() => { if (window.confirm("구절 표시(○ △ ✕)를 모두 지울까요?")) onClear(); }}
-          style={{ marginLeft: "auto", fontFamily: "inherit", fontSize: 12, fontWeight: 700, color: C.mistDim, background: "transparent",
-            border: "1px solid rgba(200,162,75,.3)", borderRadius: 999, padding: "3px 10px", cursor: "pointer" }}>표시 지우기</button>
-      )}
-    </div>
+    <>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", fontSize: 12.5, color: C.mist }}>
+        {["good", "hard", "again"].map((r) => (
+          <span key={r} style={{ display: "flex", alignItems: "center", gap: 5 }}><MarkBadge r={r} size={18} />{RATE[r].label}</span>
+        ))}
+      </div>
+      <div style={{ fontSize: 12, color: C.mistDim, marginTop: -3 }}>동그라미를 누르면 ○ → △ → ✕ → 빈칸 순으로 바뀌어요</div>
+      <VerseGrid pool={pool} curId={curId} marks={marks} maxHeight={maxHeight} onPick={onPick}
+        onCycle={(id) => onMark(id, nextMark(marks[id]))} />
+    </>
   );
 }
 
 /* 구절 목록 (구절 선택 · 다음 구절 고르기 공통) — ○ △ ✕ 표시 */
-function VerseGrid({ pool, curId, marks, onPick, maxHeight = 260 }) {
+function VerseGrid({ pool, curId, marks, onPick, onCycle, maxHeight = 260 }) {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(136px, 1fr))", gap: 6, maxHeight, overflowY: "auto" }}>
       {pool.slice().sort((a, b) => (a.ot === b.ot ? a.no - b.no : a.ot ? -1 : 1)).map((v) => {
         const a = accOf(v.ot), isCur = curId === v.id, mk = marks[v.id];
         return (
-          <button key={v.id} onClick={() => onPick(v.id)} aria-current={isCur}
-            aria-label={`${v.full}${mk ? ` (${RATE[mk].label})` : ""}`}
-            style={{ fontFamily: "inherit", fontSize: 13.5, fontWeight: 700, padding: "8px 4px", borderRadius: 3, cursor: "pointer",
-              border: `1px solid ${isCur ? a.main : a.chip}`, background: isCur ? C.parch : "transparent",
-              color: isCur ? (v.ot ? C.ink : a.deep) : (v.ot ? C.parchDk : a.onDark) }}>
-            <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
-              {mk && <MarkIcon r={mk} size={13} onLight={isCur} />}{v.full}
-            </span>
-          </button>
+          <div key={v.id} style={{ display: "flex", alignItems: "stretch", borderRadius: 4, overflow: "hidden",
+            border: `1px solid ${isCur ? a.main : a.chip}`, background: isCur ? C.parch : "transparent" }}>
+            <button onClick={() => onCycle && onCycle(v.id)} disabled={!onCycle}
+              aria-label={`${v.full} 표시 바꾸기 (지금: ${mk ? RATE[mk].label : "없음"})`}
+              style={{ flexShrink: 0, width: 36, display: "flex", alignItems: "center", justifyContent: "center", padding: 0, border: 0,
+                borderRight: `1px solid ${isCur ? "rgba(43,38,32,.15)" : "rgba(200,162,75,.18)"}`, background: "transparent", cursor: onCycle ? "pointer" : "default" }}>
+              {mk ? <MarkBadge r={mk} size={21} />
+                  : <span aria-hidden style={{ width: 21, height: 21, borderRadius: "50%", border: `1.5px dashed ${isCur ? "rgba(43,38,32,.4)" : "rgba(232,223,201,.4)"}` }} />}
+            </button>
+            <button onClick={() => onPick(v.id)} aria-current={isCur} aria-label={`${v.full}${mk ? ` (${RATE[mk].label})` : ""}`}
+              style={{ flex: 1, minWidth: 0, fontFamily: "inherit", fontSize: 13.5, fontWeight: 700, padding: "8px 8px", border: 0, cursor: "pointer",
+                textAlign: "left", background: "transparent", color: isCur ? (v.ot ? C.ink : a.deep) : (v.ot ? C.parchDk : a.onDark) }}>
+              {v.full}
+            </button>
+          </div>
         );
       })}
     </div>
@@ -3560,14 +3614,14 @@ function VerseGrid({ pool, curId, marks, onPick, maxHeight = 260 }) {
 }
 
 /* 자가 평가 직후 : 방금 표시한 결과를 보여 주고, 다음에 외울 구절을 직접 고름 */
-function NextChooser({ chooser, pool, marks, onPick, onNext, onClear, remaining }) {
+function NextChooser({ chooser, pool, marks, onPick, onNext, onMark, remaining }) {
   const v = RECITE_BY_ID[chooser.id];
   const m = MARK[chooser.r];
   return (
     <div style={{ padding: "16px 14px 15px", background: "rgba(255,255,255,.03)", border: "1px solid rgba(200,162,75,.35)", borderRadius: 4,
       display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <MarkIcon r={chooser.r} size={26} />
+        <MarkBadge r={chooser.r} size={30} />
         <div style={{ lineHeight: 1.45 }}>
           <div style={{ fontSize: 16, fontWeight: 800, color: C.parch }}>{v.full}</div>
           <div style={{ fontSize: 13, color: m.color, fontWeight: 700 }}>‘{RATE[chooser.r].label}’로 표시했어요</div>
@@ -3575,8 +3629,7 @@ function NextChooser({ chooser, pool, marks, onPick, onNext, onClear, remaining 
       </div>
       <div style={{ height: 1, background: "rgba(200,162,75,.25)" }} />
       <div style={{ fontSize: 14, fontWeight: 800, color: C.goldHi }}>다음에 외울 구절을 골라 주세요</div>
-      <MarkLegend marks={marks} onClear={onClear} />
-      <VerseGrid pool={pool} curId={chooser.id} marks={marks} onPick={onPick} maxHeight={340} />
+      <MarkSection pool={pool} curId={chooser.id} marks={marks} onPick={onPick} onMark={onMark} maxHeight={340} />
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <button className="tool" onClick={() => onPick(chooser.id)}>이 구절 다시 연습</button>
         <button className="btn gold" onClick={onNext} style={{ marginLeft: "auto", padding: "10px 16px" }}>
@@ -3588,43 +3641,33 @@ function NextChooser({ chooser, pool, marks, onPick, onNext, onClear, remaining 
 }
 
 function ReciteMode({ night, reduce }) {
-  const [scope, setScope] = useState("ot");           // ot | nt | all
+  const [scope, setScope] = useState("ot");           // ot | nt | all — 구절 선택 안에서 고름
   const [sub, setSub] = useState("flip");             // flip(플립 카드) | train(단계 훈련)
+  const [pickOpen, setPickOpen] = useState(false);     // 구절 선택 열림 (범위를 바꿔도 열린 채로 유지)
   const pool = useMemo(() => RECITE.filter((v) => (scope === "all" ? true : scope === "ot" ? v.ot : !v.ot)), [scope]);
+  const sh = { scope, setScope, pickOpen, setPickOpen };
 
   return (
     <>
-      <div className="dim" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-        {[["ot", "구약"], ["nt", "신약"], ["all", "전체"]].map(([k, label]) => {
-          const on = scope === k;
-          const acc = accOf(k === "nt" ? false : true);
-          const n = RECITE.filter((v) => (k === "all" ? true : k === "ot" ? v.ot : !v.ot)).length;
-          return (
-            <button key={k} className="chip" onClick={() => setScope(k)} aria-pressed={on}
-              style={{ background: on ? C.parch : "transparent", color: on ? C.ink : (k === "nt" ? acc.onDark : C.mist),
-                border: `1px solid ${on ? acc.main : acc.chip}`, boxShadow: on ? `inset 0 -3px 0 ${k === "all" ? C.gold : acc.main}` : "none" }}>
-              {label} <span style={{ fontFamily: NUM, fontSize: 15, opacity: .75 }}>{n}</span>
-            </button>
-          );
-        })}
-        <div role="group" aria-label="암송 방식" style={{ marginLeft: "auto", display: "flex", border: `1px solid rgba(200,162,75,.45)`, borderRadius: 999, overflow: "hidden" }}>
+      <div className="dim" style={{ display: "flex" }}>
+        <div role="group" aria-label="암송 방식" style={{ display: "flex", border: `1px solid rgba(200,162,75,.45)`, borderRadius: 999, overflow: "hidden" }}>
           {[["flip", "플립 카드"], ["train", "단계 훈련"]].map(([k, label]) => (
-            <button key={k} onClick={() => setSub(k)} aria-pressed={sub === k}
-              style={{ fontFamily: "inherit", fontWeight: 800, fontSize: 13, padding: "8px 13px", border: 0, cursor: "pointer",
+            <button key={k} onClick={() => { setSub(k); setPickOpen(false); }} aria-pressed={sub === k}
+              style={{ fontFamily: "inherit", fontWeight: 800, fontSize: 13.5, padding: "8px 16px", border: 0, cursor: "pointer",
                 background: sub === k ? `linear-gradient(180deg, ${C.goldHi}, ${C.gold})` : "transparent", color: sub === k ? C.navyDeep : C.mist }}>
               {label}
             </button>
           ))}
         </div>
       </div>
-      {sub === "flip" && <ReciteFlip key={"f" + scope} pool={pool} night={night} reduce={reduce} />}
-      {sub === "train" && <ReciteTrainer key={"t" + scope} pool={pool} night={night} reduce={reduce} />}
+      {sub === "flip" && <ReciteFlip key={"f" + scope} pool={pool} night={night} reduce={reduce} {...sh} />}
+      {sub === "train" && <ReciteTrainer key={"t" + scope} pool={pool} night={night} reduce={reduce} {...sh} />}
     </>
   );
 }
 
 /* ── 단계 훈련 + 세션 내 가중치 반복 ── */
-function ReciteTrainer({ pool, night, reduce }) {
+function ReciteTrainer({ pool, night, reduce, scope, setScope, pickOpen, setPickOpen }) {
   const initQueue = () => shuffled(pool.map((v) => v.id));
   const [queue, setQueue] = useState(initQueue);
   const [startStep, setStartStep] = useState({});      // 다시 나올 때 시작 단계
@@ -3635,7 +3678,6 @@ function ReciteTrainer({ pool, night, reduce }) {
   useEffect(() => { (async () => { try { const s = await store.get(RECITE_MARK_KEY); if (s) setMarks(JSON.parse(s)); } catch (e) {} setMkLoaded(true); })(); }, []);
   useEffect(() => { if (mkLoaded) store.set(RECITE_MARK_KEY, JSON.stringify(marks)); }, [marks, mkLoaded]);
   const mastered = done.size;
-  const [pickOpen, setPickOpen] = useState(false);
   const [miss, setMiss] = useState({});                 // id → { hard, again }
   const [levels, setLevels] = useState({ 1: 1, 2: 1, 3: 1 });   // 단계별 레벨(1~3) — 기기에 저장
   const [lvLoaded, setLvLoaded] = useState(false);
@@ -3661,24 +3703,13 @@ function ReciteTrainer({ pool, night, reduce }) {
     setQueue(rest); setStep(rest.length ? ns[rest[0]] || 1 : 1); setChooser(null);
   };
 
-  const curAcc = cur ? accOf(cur.ot) : null;
   const picker = (
     <>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-        <button className={`tool ${pickOpen ? "on" : ""}`} onClick={() => setPickOpen((o) => !o)} aria-expanded={pickOpen}>
-          <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden style={{ display: "block" }}>
-            <g fill="none" stroke={pickOpen ? C.navyDeep : C.goldHi} strokeWidth="1.6" strokeLinecap="round"><path d="M2 3.5h12M2 8h12M2 12.5h7" /></g>
-          </svg>
-          구절 선택
-        </button>
-        {cur && <VersePill v={cur} mark={marks[cur.id]} />}
-      </div>
+      {cur ? <VersePill v={cur} mark={marks[cur.id]} open={pickOpen} onClick={() => setPickOpen((o) => !o)} />
+           : <PickerButton open={pickOpen} onClick={() => setPickOpen((o) => !o)} />}
       {pickOpen && (
-        <div style={{ padding: "12px 12px 13px", background: "rgba(255,255,255,.03)", border: "1px solid rgba(200,162,75,.3)", borderRadius: 3 }}>
-          <div style={{ fontSize: 12.5, color: C.mist, marginBottom: 6 }}>외울 구절을 누르면 바로 그 구절부터 시작해요</div>
-          <MarkLegend marks={marks} onClear={() => setMarks({})} />
-          <VerseGrid pool={pool} curId={cur && cur.id} marks={marks} onPick={jumpTo} />
-        </div>
+        <PickerPanel scope={scope} setScope={setScope} pool={pool} curId={cur && cur.id} marks={marks}
+          onPick={jumpTo} onMark={(id, r) => setMarks((m) => setMark(m, id, r))} note="외울 구절을 누르면 바로 그 구절부터 시작해요" />
       )}
     </>
   );
@@ -3732,53 +3763,61 @@ function ReciteTrainer({ pool, night, reduce }) {
   return (
     <AccCtx.Provider value={acc}>
       {picker}
-      {/* 진행 상황 */}
-      <div className="dim" style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <div style={{ flex: 1, height: 5, borderRadius: 3, background: "rgba(200,162,75,.18)", overflow: "hidden" }}>
-          <div style={{ width: `${(mastered / total) * 100}%`, height: "100%", background: `linear-gradient(90deg, ${C.goldDk}, ${C.goldHi})`,
-            transition: reduce ? "none" : "width .4s ease" }} />
-        </div>
-        <span style={{ fontSize: 12.5, color: C.mist, whiteSpace: "nowrap" }}>
-          외운 구절 <b style={{ fontFamily: NUM, fontSize: 16, color: C.goldHi }}>{mastered}</b> / {total} · 남은 카드 {queue.length}
-        </span>
+      {/* 진행 상황 : 가는 선 (외운 구절 비율) */}
+      <div role="progressbar" aria-label={`외운 구절 ${mastered} / ${total}`} aria-valuenow={mastered} aria-valuemax={total}
+        className="dim" style={{ height: 3, margin: "-4px 6px 0", borderRadius: 2, background: "rgba(200,162,75,.18)", overflow: "hidden" }}>
+        <div style={{ width: `${(mastered / total) * 100}%`, height: "100%", background: C.gold, transition: reduce ? "none" : "width .4s ease" }} />
       </div>
 
       {chooser ? (
         <NextChooser chooser={chooser} pool={pool} marks={marks} onPick={jumpTo} onNext={goRecommended}
-          onClear={() => setMarks({})} remaining={chooser.rest.length} />
+          onMark={(id, r) => setMarks((m) => setMark(m, id, r))} remaining={chooser.rest.length} />
       ) : (<>
       {/* 단계 표시 (눌러서 이동 가능) */}
-      <div role="tablist" aria-label="암송 단계" className="dim" style={{ display: "flex", gap: 6 }}>
-        {STEPS.map(([s, label]) => (
-          <button key={s} role="tab" aria-selected={step === s} onClick={() => setStep(s)}
-            style={{ flex: 1, fontFamily: "inherit", fontSize: 12, fontWeight: 800, padding: "6px 2px 7px", borderRadius: 3, cursor: "pointer",
-              border: `1px solid ${step === s ? acc.main : "rgba(200,162,75,.25)"}`, lineHeight: 1.25, wordBreak: "keep-all",
-              display: "flex", flexDirection: "column", alignItems: "center", gap: 1,
-              background: step === s ? "rgba(230,203,126,.12)" : "transparent", color: step === s ? C.goldHi : C.mistDim }}>
-            <span style={{ fontFamily: NUM, fontSize: 16 }}>{s}</span>{label}
-            {s < 4 && <span style={{ fontSize: 10.5, fontWeight: 700, opacity: step === s ? .9 : .7 }}>Lv.<span style={{ fontFamily: NUM, fontSize: 13 }}>{levels[s]}</span></span>}
-          </button>
-        ))}
+      <div role="tablist" aria-label="암송 단계" className="dim" style={{ display: "flex", borderBottom: "1px solid rgba(200,162,75,.25)" }}>
+        {STEPS.map(([st, label]) => {
+          const on = step === st;
+          return (
+            <button key={st} role="tab" aria-selected={on} onClick={() => setStep(st)}
+              style={{ flex: 1, fontFamily: "inherit", fontSize: 13, fontWeight: 800, padding: "8px 0 9px", border: 0, cursor: "pointer", background: "transparent",
+                color: on ? C.goldHi : C.mistDim, boxShadow: on ? `inset 0 -2.5px 0 ${C.goldHi}` : "none", whiteSpace: "nowrap" }}>
+              <span style={{ fontFamily: NUM, fontSize: 15, marginRight: 3 }}>{"①②③④"[st - 1]}</span>{label}
+            </button>
+          );
+        })}
       </div>
 
-      {step < 4 && <LevelBar step={step} level={levels[step]} onChange={(lv) => setLevel(step, lv)} acc={acc} />}
-
-      {step === 1 && <StepHint key={cur.id + "-1-" + levels[1]} v={cur} kind="cho" level={levels[1]} onNext={() => setStep(2)} />}
-      {step === 2 && <StepHint key={cur.id + "-2-" + levels[2]} v={cur} kind="first" level={levels[2]} onNext={() => setStep(3)} />}
-      {step === 3 && <StepAnchor key={cur.id + "-3-" + levels[3]} v={cur} level={levels[3]} onNext={() => setStep(4)} />}
+      {step === 1 && <StepHint key={cur.id + "-1-" + levels[1]} v={cur} kind="cho" level={levels[1]} onLevel={(lv) => setLevel(1, lv)} onNext={() => setStep(2)} />}
+      {step === 2 && <StepHint key={cur.id + "-2-" + levels[2]} v={cur} kind="first" level={levels[2]} onLevel={(lv) => setLevel(2, lv)} onNext={() => setStep(3)} />}
+      {step === 3 && <StepAnchor key={cur.id + "-3-" + levels[3]} v={cur} level={levels[3]} onLevel={(lv) => setLevel(3, lv)} onNext={() => setStep(4)} />}
       {step === 4 && <StepRecall key={cur.id + "-4"} v={cur} onRate={rate} />}
       </>)}
     </AccCtx.Provider>
   );
 }
 
-function VerseLabel({ v }) {
+/* 단계 카드 위쪽 : 왼쪽 성경 위치 · 오른쪽 레벨 1·2·3 */
+function VerseLabel({ v, level, onLevel }) {
   const acc = useAcc();
   return (
     <>
-      <Label>암송 <span style={{ fontFamily: NUM, fontSize: 17, fontWeight: 700 }}>{v.no}</span></Label>
-      <span style={{ position: "absolute", top: 19, right: 38, fontSize: 14, fontWeight: 800, color: acc.deep, border: `1px solid ${acc.main}`,
-        padding: "3px 12px", borderRadius: 999, letterSpacing: ".02em", maxWidth: "60%", whiteSpace: "nowrap" }}>{v.full}</span>
+      <span style={{ position: "absolute", top: 21, left: 38, right: onLevel ? 170 : 38, fontSize: 15, fontWeight: 800, color: acc.deep,
+        letterSpacing: ".02em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.full}</span>
+      {onLevel && (
+        <div role="radiogroup" aria-label="난이도" onClick={(e) => e.stopPropagation()}
+          style={{ position: "absolute", top: 17, right: 30, display: "flex", border: `1px solid ${acc.main}`, borderRadius: 999, overflow: "hidden" }}>
+          {[1, 2, 3].map((lv) => {
+            const on = level === lv;
+            return (
+              <button key={lv} role="radio" aria-checked={on} aria-label={`레벨 ${lv}`} onClick={() => onLevel(lv)}
+                style={{ fontFamily: "inherit", fontWeight: 800, fontSize: 11.5, padding: "4px 8px", border: 0, cursor: "pointer",
+                  background: on ? acc.main : "transparent", color: on ? "var(--c-bg1)" : acc.deep, whiteSpace: "nowrap" }}>
+                레벨 <span style={{ fontFamily: NUM, fontSize: 13 }}>{lv}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </>
   );
 }
@@ -3819,16 +3858,16 @@ function cueCount(seg) {
   return first.length <= 1 || CUE_LEAD.has(first) ? 2 : 1;
 }
 
-/* 레벨에 따라 덩어리 나누기·합치기 : 1 잘게(4어절 안팎) · 2 두 덩어리씩 · 3 절 전체를 한 덩어리로 */
+/* 레벨에 따라 덩어리 나누기·합치기 : 1 잘게(3어절씩) · 2 의미 덩어리 그대로 · 3 절 전체를 한 덩어리로 */
 function segsByLevel(words, level = 1) {
   const segs = segmentWords(words);
   if (level === 3) return [segs.flat()];
-  if (level === 2) { const out = []; for (let i = 0; i < segs.length; i += 2) out.push(segs.slice(i, i + 2).flat()); return out; }
-  /* 레벨 1 : 덩어리를 4어절 안팎으로 잘게 나눠 중간중간 단서가 더 보이게 (마지막 한 어절은 앞에 붙임) */
+  if (level === 2) return segs;
+  /* 레벨 1 : 덩어리를 3어절씩 잘게 나눠 단서가 많이 보이게 (마지막 한 어절은 앞에 붙임) */
   const out = [];
   for (const seg of segs) {
     const parts = [];
-    for (let i = 0; i < seg.length; i += 4) parts.push(seg.slice(i, i + 4));
+    for (let i = 0; i < seg.length; i += 3) parts.push(seg.slice(i, i + 3));
     if (parts.length > 1 && parts[parts.length - 1].length < 2) parts[parts.length - 2] = parts[parts.length - 2].concat(parts.pop());
     out.push(...parts);
   }
@@ -3873,7 +3912,7 @@ function AnchorText({ v, open, onToggle, level = 1 }) {
 
 /* Step 1·2 : 초성 / 첫 글자 힌트
    레벨 1 — 모든 어절에 힌트 · 레벨 2 — 어절 두 개 중 하나만 힌트 · 레벨 3 — 어절 세 개 중 하나만 힌트
-   힌트가 없는 어절은 빈 줄 · 어절을 누르면 원문이 보이고, 다시 누르면 가려짐 */
+   힌트가 없는 어절은 글자 수만큼 ○ · 어절을 누르면 원문이 보이고, 다시 누르면 가려짐 */
 function hintWordSet(v, level) {
   const set = new Set(); let k = 0;
   for (const vv of v.verses) {
@@ -3884,7 +3923,7 @@ function hintWordSet(v, level) {
   }
   return set;
 }
-function StepHint({ v, kind, level, onNext }) {
+function StepHint({ v, kind, level, onLevel, onNext }) {
   const acc = useAcc();
   const [peek, setPeek] = useState(() => new Set());
   const hinted = useMemo(() => hintWordSet(v, level), [v.id, level]);
@@ -3895,7 +3934,7 @@ function StepHint({ v, kind, level, onNext }) {
   return (
     <>
       <Face>
-        <VerseLabel v={v} />
+        <VerseLabel v={v} level={level} onLevel={onLevel} />
         <div style={{ width: "100%", maxWidth: "34em", fontSize: 18, lineHeight: 2.15, color: "var(--c-ink)", wordBreak: "keep-all" }}>
           {v.verses.map((vv) => (
             <span key={vv.v}>
@@ -3916,17 +3955,19 @@ function StepHint({ v, kind, level, onNext }) {
                     {hintOf(w)}
                   </button>
                 );
-                const len = hangulOnly(w).length || w.length;
+                /* 힌트 없는 어절 : 글자 수만큼 ○ (문장부호는 그대로) → 자리가 보이게 */
                 return (
-                  <button key={k} onClick={() => toggle(k)} aria-label="가려진 단어 보기"
-                    style={{ display: "inline-block", verticalAlign: "-3px", width: `${len * 0.82 + 0.5}em`, height: "1.05em", margin: "0 4px",
-                      padding: 0, border: 0, borderBottom: `2px dashed ${acc.main}`, background: "transparent", cursor: "pointer" }} />
+                  <button key={k} onClick={() => toggle(k)} aria-label={`가려진 단어 보기 (${hangulOnly(w).length || w.length}글자)`}
+                    style={{ font: "inherit", background: "transparent", border: 0, padding: "0 3px", margin: "0 1px", borderRadius: 3, cursor: "pointer",
+                      color: "var(--c-ink)", fontWeight: 400, letterSpacing: ".04em", opacity: .38 }}>
+                    {[...w].map((ch) => (/[\uac00-\ud7a3]/.test(ch) ? "○" : ch)).join("")}
+                  </button>
                 );
               })}{" "}
             </span>
           ))}
         </div>
-        <Hint>소리 내어 읽어 보고, 막히는 단어나 빈 줄만 눌러 확인하세요</Hint>
+        <Hint>{LEVEL_DESC[kind === "cho" ? 1 : 2][level]} · 막히는 단어만 눌러 확인하세요</Hint>
       </Face>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <button className="tool" onClick={() => setPeek(showAll ? new Set() : new Set(v.words.map((_, i) => i)))}>{showAll ? "다시 가리기" : "전체 보기"}</button>
@@ -3938,7 +3979,7 @@ function StepHint({ v, kind, level, onNext }) {
 
 /* Step 3 : 단서 외우기 — 덩어리마다 첫 단서만 보고 나머지를 이어서 외움 (레벨이 오를수록 단서가 줄어듦)
    빈 줄을 누르면 그 덩어리가 열리고, 다시 누르면 가려짐 */
-function StepAnchor({ v, level, onNext }) {
+function StepAnchor({ v, level, onLevel, onNext }) {
   const [reveal, setReveal] = useState({});
   const segAll = useMemo(() => v.verses.flatMap((vv) => {
     const segs = segsByLevel(vv.t.split(/\s+/).filter(Boolean), level); const cues = cuesFor(segs);
@@ -3948,9 +3989,9 @@ function StepAnchor({ v, level, onNext }) {
   return (
     <>
       <Face>
-        <VerseLabel v={v} />
+        <VerseLabel v={v} level={level} onLevel={onLevel} />
         <AnchorText v={v} level={level} open={reveal} onToggle={(k) => setReveal((r) => ({ ...r, [k]: !r[k] }))} />
-        <Hint>단서만 보고 이어서 외워 보세요 · 빈 줄을 누르면 열리고, 다시 누르면 가려져요</Hint>
+        <Hint>{LEVEL_DESC[3][level]} · 빈 줄을 누르면 열리고, 다시 누르면 가려져요</Hint>
       </Face>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <button className="tool" onClick={() => setReveal(allOpen ? {} : Object.fromEntries(segAll.map(([k]) => [k, true])))}>{allOpen ? "다시 가리기" : "전체 보기"}</button>
@@ -3969,7 +4010,7 @@ function StepRecall({ v, onRate }) {
       <div className="card" role="button" tabIndex={0} onClick={() => setOpen(true)}
         onKeyDown={(e) => { if (e.key === "Enter") setOpen(true); }} style={{ cursor: open ? "default" : "pointer" }}>
         <Face>
-          <Label>암송 <span style={{ fontFamily: NUM, fontSize: 17, fontWeight: 700 }}>{v.no}</span></Label>
+          <VerseLabel v={v} />
           {!open ? (
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: 24, fontWeight: 800, color: acc.deep, letterSpacing: ".06em" }}>{v.bookFull}</div>
@@ -4012,7 +4053,7 @@ function StepRecall({ v, onRate }) {
 
 /* ── 플립 카드 : 문제 카드처럼 뒤집어 외우기 (북마크·섞기·슬라이더 동일) ── */
 const RECITE_BM_KEY = "gosa:recite-bm:v1";
-function ReciteFlip({ pool, night, reduce }) {
+function ReciteFlip({ pool, night, reduce, scope, setScope, pickOpen, setPickOpen }) {
   const base = useMemo(() => pool.map((v) => v.id), [pool]);
   const [deck, setDeck] = useState(base);
   const [index, setIndex] = useState(0);
@@ -4024,11 +4065,10 @@ function ReciteFlip({ pool, night, reduce }) {
   const [bmScope, setBmScope] = useState("all");      // all(전체) | pick(직접 선택)
   const [picked, setPicked] = useState(null);           // 직접 선택한 구절 id (null = 아직 안 고름 → 북마크 전부)
   const [crossOrder, setCrossOrder] = useState(null);   // 전체·직접 선택에서 섞었을 때 순서
-  const [pickOpen, setPickOpen] = useState(false);      // 구절 선택
   const [marks, setMarks] = useState({});              // 단계 훈련의 ○ △ ✕ 표시 (같은 저장값)
   const loadMarks = async () => { try { const s = await store.get(RECITE_MARK_KEY); setMarks(s ? JSON.parse(s) : {}); } catch (e) {} };
   useEffect(() => { loadMarks(); }, []);
-  const clearMarks = () => { setMarks({}); store.set(RECITE_MARK_KEY, JSON.stringify({})); };
+  const changeMark = (id, r) => setMarks((m) => { const n = setMark(m, id, r); store.set(RECITE_MARK_KEY, JSON.stringify(n)); return n; });
 
   useEffect(() => { (async () => { try { const s = await store.get(RECITE_BM_KEY); if (s) setBm(new Set(JSON.parse(s))); } catch (e) {} setBmLoaded(true); })(); }, []);
   useEffect(() => { if (bmLoaded) store.set(RECITE_BM_KEY, JSON.stringify([...bm])); }, [bm, bmLoaded]);
@@ -4110,32 +4150,35 @@ function ReciteFlip({ pool, night, reduce }) {
 
   return (
     <>
-      {/* 도구 */}
-      <div role="toolbar" aria-label="플립 카드 도구" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-        <button className="tool" onClick={doShuffle}><ShuffleIcon />섞기</button>
-        <button className="tool" onClick={resetOrder}><ResetIcon />원래 순서</button>
-        <button className={`tool ${onlyMarked ? "on" : ""}`} onClick={toggleOnly} aria-pressed={onlyMarked} style={{ marginLeft: "auto" }}>
-          <BookmarkIcon filled color={onlyMarked ? C.navyDeep : C.goldHi} size={13} />
-          {onlyMarked ? "북마크 닫기" : "북마크 보기"}
-          {!onlyMarked && <span className="badge">{allMarked.length}</span>}
-        </button>
-      </div>
-      {/* 구절 선택 + 지금 구절 */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-        <button className={`tool ${pickOpen ? "on" : ""}`} onClick={() => { if (!pickOpen) loadMarks(); setPickOpen((o) => !o); }} aria-expanded={pickOpen} disabled={!total}>
-          <PickIcon on={pickOpen} />구절 선택
-        </button>
-        {cur && <VersePill v={cur} mark={marks[cur.id]} />}
-      </div>
-      {pickOpen && total > 0 && (
-        <div style={{ padding: "12px 12px 13px", background: "rgba(255,255,255,.03)", border: "1px solid rgba(200,162,75,.3)", borderRadius: 3 }}>
-          <div style={{ fontSize: 12.5, color: C.mist, marginBottom: 6 }}>
-            구절을 누르면 그 카드로 바로 이동해요{onlyMarked ? " · 북마크한 구절만 보여요" : ""}
-          </div>
-          <MarkLegend marks={marks} onClear={clearMarks} />
-          <VerseGrid pool={view.map((id) => RECITE_BY_ID[id])} curId={cur && cur.id} marks={marks} onPick={jumpTo} />
-        </div>
+      {/* 구절 선택 (표시줄을 누르면 열림) */}
+      {cur ? <VersePill v={cur} mark={marks[cur.id]} open={pickOpen} onClick={() => { if (!pickOpen) loadMarks(); setPickOpen((o) => !o); }} />
+           : <PickerButton open={pickOpen} onClick={() => setPickOpen((o) => !o)} />}
+      {pickOpen && (
+        <PickerPanel scope={scope} setScope={setScope} pool={view.map((id) => RECITE_BY_ID[id])} curId={cur && cur.id} marks={marks}
+          onPick={jumpTo} onMark={changeMark}
+          note={onlyMarked ? "북마크한 구절만 보여요 · 구절을 누르면 그 카드로 이동해요" : "구절을 누르면 그 카드로 바로 이동해요"} />
       )}
+
+      {/* 앞면 선택 + 도구 */}
+      <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
+        <div role="group" aria-label="앞면 선택" style={{ display: "flex", border: "1px solid rgba(200,162,75,.4)", borderRadius: 999, overflow: "hidden" }}>
+          {[["ref", "장·절 앞"], ["text", "본문 앞"]].map(([k, label]) => (
+            <button key={k} onClick={() => { setFront(k); setFlipped(false); }} aria-pressed={front === k}
+              style={{ fontFamily: "inherit", fontWeight: 800, fontSize: 12, padding: "7px 9px", border: 0, cursor: "pointer",
+                background: front === k ? `linear-gradient(180deg, ${C.goldHi}, ${C.gold})` : "transparent", color: front === k ? C.navyDeep : C.mist }}>{label}</button>
+          ))}
+        </div>
+        <div role="toolbar" aria-label="플립 카드 도구" style={{ display: "flex", gap: 4, marginLeft: "auto", filter: "none" }}>
+          <ToolChip tone="blue" onClick={doShuffle}><ShuffleIcon color="#9DBDF0" />섞기</ToolChip>
+          <ToolChip tone="ivory" onClick={resetOrder}><ResetIcon color="#D8D1C0" />원래대로</ToolChip>
+          <ToolChip tone="rose" on={onlyMarked} onClick={toggleOnly} ariaPressed={onlyMarked}>
+            <BookmarkIcon filled color={onlyMarked ? "#3A0F18" : "#F0A0AB"} size={12} />
+            {onlyMarked ? "북마크 닫기" : <>북마크 <span style={{ minWidth: 18, height: 18, padding: "0 5px", borderRadius: 999, background: "#F0A0AB", color: "#3A0F18",
+              fontFamily: SANS, fontSize: 12, fontWeight: 800, lineHeight: "18px", textAlign: "center", fontVariantNumeric: "lining-nums tabular-nums", boxSizing: "border-box" }}>{allMarked.length}</span></>}
+          </ToolChip>
+        </div>
+      </div>
+
       {/* 북마크 범위 */}
       {onlyMarked && (
         <div style={{ padding: "12px 12px 13px", background: "rgba(255,255,255,.03)", border: "1px solid rgba(200,162,75,.3)", borderRadius: 3 }}>
@@ -4193,18 +4236,6 @@ function ReciteFlip({ pool, night, reduce }) {
           )}
         </div>
       )}
-
-      <div className="dim" style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: C.mist }}>
-        앞면
-        <div role="group" aria-label="앞면 선택" style={{ display: "flex", border: "1px solid rgba(200,162,75,.4)", borderRadius: 999, overflow: "hidden" }}>
-          {[["ref", "장·절"], ["text", "본문"]].map(([k, label]) => (
-            <button key={k} onClick={() => { setFront(k); setFlipped(false); }} aria-pressed={front === k}
-              style={{ fontFamily: "inherit", fontWeight: 800, fontSize: 12.5, padding: "6px 13px", border: 0, cursor: "pointer",
-                background: front === k ? "rgba(230,203,126,.18)" : "transparent", color: front === k ? C.goldHi : C.mistDim }}>{label}</button>
-          ))}
-        </div>
-        <span style={{ color: C.mistDim }}>{front === "ref" ? "장·절을 보고 본문을 외워요" : "본문을 보고 장·절을 맞혀요"}</span>
-      </div>
 
       {/* 카드 */}
       {cur ? (
