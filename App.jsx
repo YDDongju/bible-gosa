@@ -2713,6 +2713,7 @@ function DDay() {
 }
 
 const STORAGE_KEY = "gosa:bookmarks:v1";
+const R_MARK_KEY = "gosa:range-marks:v1";
 const NIGHT_KEY = "gosa:night:v1";
 
 /* 저장소 : 배포본은 localStorage, Claude 미리보기에선 window.storage로 자동 전환 */
@@ -2874,6 +2875,7 @@ function Chevron({ dir }) {
 
 export default function App() {
   const [bookKey, setBookKey] = useState(LIB[0].key);
+  const [rangeOpen, setRangeOpen] = useState(false);   // 범위 선택 창
   const book = LIB.find((b) => b.key === bookKey);
 
   const [deck, setDeck] = useState(LIB[0].questions);
@@ -2901,6 +2903,11 @@ export default function App() {
     return () => { alive = false; };
   }, []);
   useEffect(() => { if (loaded) store.set(STORAGE_KEY, JSON.stringify([...bookmarks])); }, [bookmarks, loaded]);
+  /* 범위(권)별 ○ △ ✕ 표시 — 범위 선택 창에서 동그라미를 누를 때마다 ○ → △ → ✕ → 빈칸 (기기에 저장) */
+  const [rMarks, setRMarks] = useState({});
+  const [rmLoaded, setRmLoaded] = useState(false);
+  useEffect(() => { (async () => { try { const s = await store.get(R_MARK_KEY); if (s) setRMarks(JSON.parse(s)); } catch (e) {} setRmLoaded(true); })(); }, []);
+  useEffect(() => { if (rmLoaded) store.set(R_MARK_KEY, JSON.stringify(rMarks)); }, [rMarks, rmLoaded]);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -3077,31 +3084,13 @@ export default function App() {
         {appMode === "recite" && <ReciteMode night={night} reduce={reduce} />}
 
         {appMode === "quiz" && (<>
-        {/* 범위 선택 */}
-        <nav aria-label="시험 범위" className="chips" style={{ display: "flex", gap: 8, overflowX: "auto", padding: "2px 1px" }}>
-          {[true, false].map((ot) => {
-            const books = LIB.filter((b) => (b.ot !== false) === ot);
-            if (!books.length) return null;
-            const acc = accOf(ot);
-            return (
-              <React.Fragment key={acc.name}>
-                <span aria-hidden style={{ flex: "0 0 auto", alignSelf: "center", fontSize: 11.5, fontWeight: 800, letterSpacing: ".12em",
-                  color: acc.onDark, padding: ot ? "0 2px 0 0" : "0 2px 0 10px", borderLeft: ot ? "none" : "1px solid rgba(255,255,255,.18)" }}>{acc.name}</span>
-                {books.map((b) => {
-                  const on = b.key === bookKey && !cross;
-                  return (
-                    <button key={b.key} className="chip" onClick={() => switchBook(b.key)} aria-pressed={on}
-                      style={{ background: on ? C.parch : "transparent", color: on ? (ot ? C.ink : acc.deep) : (ot ? C.mist : acc.onDark),
-                        border: `1px solid ${on ? (ot ? C.goldHi : acc.main) : acc.chip}`,
-                        boxShadow: on ? `inset 0 -3px 0 ${acc.main}` : "none" }}>
-                      {b.name}
-                    </button>
-                  );
-                })}
-              </React.Fragment>
-            );
-          })}
-        </nav>
+        {/* 범위 표시줄 = 범위 선택 버튼 (누르면 구약·신약별 범위 목록) */}
+        <RangePill book={book} cross={cross} mark={rMarks[bookKey]} open={rangeOpen} onClick={() => setRangeOpen((o) => !o)} />
+        {rangeOpen && (
+          <RangePanel bookKey={cross ? null : bookKey} counts={counts} marks={rMarks}
+            onCycle={(k) => setRMarks((m) => setMark(m, k, nextMark(m[k])))}
+            onPick={(k) => { switchBook(k); setRangeOpen(false); }} />
+        )}
 
         {/* 도구 : 범위 탭(네모)과 구분되는 둥근 알약 모양 */}
         <div role="toolbar" aria-label="문제 도구" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap",
@@ -3468,6 +3457,97 @@ function MarkIcon({ r, size = 13, onLight = false }) {
         {r === "again" && <path d="M3.4 3.4l9.2 9.2M12.6 3.4l-9.2 9.2" />}
       </g>
     </svg>
+  );
+}
+
+/* 문제 카드 범위 표시줄 = 범위 선택 버튼 */
+function RangePill({ book, cross, mark, open, onClick }) {
+  const ot = book.ot !== false;
+  const a = accOf(ot);
+  return (
+    <button onClick={onClick} aria-expanded={open} aria-label={`지금 범위 ${cross ? "북마크 모음" : book.name} · 범위 선택`}
+      style={{ width: "100%", fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, padding: "6px 8px 6px 6px",
+        borderRadius: 999, background: open ? "rgba(230,203,126,.12)" : "rgba(247,241,227,.07)", border: `1.5px solid ${cross ? C.gold : a.main}`, textAlign: "left" }}>
+      {cross ? (
+        <span style={{ flexShrink: 0, fontSize: 11.5, fontWeight: 800, padding: "3px 8px", borderRadius: 999, background: C.gold, color: C.navyDeep }}>북마크</span>
+      ) : (
+        <span style={{ flexShrink: 0, fontSize: 11.5, fontWeight: 800, padding: "3px 8px", borderRadius: 999, background: a.main, color: ot ? C.navyDeep : "#FBF6EA" }}>
+          {ot ? "구약" : "신약"}
+        </span>
+      )}
+      <span style={{ minWidth: 0, fontSize: 17, fontWeight: 800, color: ot || cross ? C.goldHi : a.onDark, letterSpacing: ".02em",
+        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+        {cross ? "북마크 모음" : book.name}
+      </span>
+      {!cross && <span style={{ flexShrink: 0, fontSize: 12.5, color: C.mist, fontFamily: SANS, fontVariantNumeric: "lining-nums" }}>{book.questions.length}문항</span>}
+      {!cross && mark && <MarkBadge r={mark} size={24} />}
+      <span style={{ marginLeft: "auto", flexShrink: 0, display: "flex", alignItems: "center", gap: 3, fontSize: 12.5, fontWeight: 800,
+        color: open ? C.navyDeep : C.goldHi, background: open ? C.goldHi : "transparent", border: `1px solid rgba(230,203,126,.55)`,
+        borderRadius: 999, padding: "4px 9px" }}>
+        범위 선택
+        <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden style={{ transform: open ? "rotate(180deg)" : "none" }}>
+          <path d="M1.5 3.2 5 6.8 8.5 3.2" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </span>
+    </button>
+  );
+}
+/* 범위 선택 창 : 구약·신약 고르고 → 범위(책) 고르기 */
+function RangePanel({ bookKey, counts, marks = {}, onCycle, onPick }) {
+  const cur = LIB.find((b) => b.key === bookKey);
+  const [ot, setOt] = useState(cur ? cur.ot !== false : true);
+  const list = LIB.filter((b) => (b.ot !== false) === ot);
+  return (
+    <div style={{ padding: "12px 12px 13px", background: "rgba(255,255,255,.03)", border: "1px solid rgba(200,162,75,.3)", borderRadius: 4,
+      display: "flex", flexDirection: "column", gap: 9 }}>
+      <div role="group" aria-label="구약·신약" style={{ display: "flex", gap: 6 }}>
+        {[[true, "구약"], [false, "신약"]].map(([o, label]) => {
+          const on = ot === o, a = accOf(o);
+          const n = LIB.filter((b) => (b.ot !== false) === o).length;
+          return (
+            <button key={label} onClick={() => setOt(o)} aria-pressed={on}
+              style={{ flex: 1, fontFamily: "inherit", fontWeight: 800, fontSize: 14, padding: "8px 4px", borderRadius: 4, cursor: "pointer",
+                background: on ? C.parch : "transparent", color: on ? C.ink : (o ? C.mist : a.onDark),
+                border: `1px solid ${on ? a.main : "rgba(200,162,75,.3)"}` }}>
+              {label} <span style={{ fontFamily: SANS, fontSize: 12.5, fontWeight: 700, opacity: .75 }}>{n}개 범위</span>
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ fontSize: 12.5, color: C.mist }}>범위 이름을 누르면 그 범위 문제로 바로 바뀌어요</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", fontSize: 12.5, color: C.mist }}>
+        {["good", "hard", "again"].map((r) => (
+          <span key={r} style={{ display: "flex", alignItems: "center", gap: 5 }}><MarkBadge r={r} size={18} />{RATE[r].label}</span>
+        ))}
+      </div>
+      <div style={{ fontSize: 12, color: C.mistDim, marginTop: -3 }}>동그라미를 누르면 ○ → △ → ✕ → 빈칸 순으로 바뀌어요</div>
+      <div style={{ maxHeight: 300, overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gridAutoRows: "minmax(50px, auto)", alignContent: "start", gap: 6 }}>
+          {list.map((b) => {
+            const on = b.key === bookKey, a = accOf(ot), mk = marks[b.key];
+            return (
+              <div key={b.key} style={{ display: "flex", alignItems: "stretch", minHeight: 50, boxSizing: "border-box", borderRadius: 4, overflow: "hidden",
+                border: `1px solid ${on ? a.main : a.chip}`, background: on ? C.parch : "transparent" }}>
+                <button onClick={() => onCycle(b.key)} aria-label={`${b.name} 표시 바꾸기 (지금: ${mk ? RATE[mk].label : "없음"})`}
+                  style={{ flexShrink: 0, width: 38, display: "flex", alignItems: "center", justifyContent: "center", padding: 0, border: 0,
+                    borderRight: `1px solid ${on ? "rgba(43,38,32,.15)" : "rgba(200,162,75,.18)"}`, background: "transparent", cursor: "pointer" }}>
+                  {mk ? <MarkBadge r={mk} size={22} />
+                      : <span aria-hidden style={{ width: 22, height: 22, borderRadius: "50%", border: `1.5px dashed ${on ? "rgba(43,38,32,.4)" : "rgba(232,223,201,.4)"}` }} />}
+                </button>
+                <button onClick={() => onPick(b.key)} aria-current={on}
+                  style={{ flex: 1, minWidth: 0, fontFamily: "inherit", textAlign: "left", padding: "7px 9px", border: 0, background: "transparent", cursor: "pointer",
+                    display: "flex", flexDirection: "column", justifyContent: "center", gap: 2 }}>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: on ? (ot ? C.ink : a.deep) : (ot ? C.parchDk : a.onDark), lineHeight: 1.3 }}>{b.name}</span>
+                  <span style={{ fontSize: 11.5, fontFamily: SANS, fontVariantNumeric: "lining-nums", color: on ? "rgba(43,38,32,.6)" : C.mistDim }}>
+                    {b.questions.length}문항{counts[b.key] ? ` · 북마크 ${counts[b.key]}` : ""}
+                  </span>
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -4007,14 +4087,19 @@ function StepAnchor({ v, level, onLevel, onNext }) {
 /* Step 4 : 장·절만 보고 떠올리기 → 탭해서 확인 → 자가 평가 */
 function StepRecall({ v, onRate }) {
   const acc = useAcc();
-  const [open, setOpen] = useState(false);
+  const [flipped, setFlipped] = useState(false);
+  const [seen, setSeen] = useState(false);          // 한 번이라도 뒤집어 봤으면 평가 버튼 보임
+  const reduceMo = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const flip = () => { setFlipped((f) => !f); setSeen(true); };
   return (
     <>
-      <div className="card" role="button" tabIndex={0} onClick={() => setOpen(true)}
-        onKeyDown={(e) => { if (e.key === "Enter") setOpen(true); }} style={{ cursor: open ? "default" : "pointer" }}>
-        <Face>
-          <VerseLabel v={v} />
-          {!open ? (
+      <div className="card" role="button" tabIndex={0} onClick={flip}
+        aria-label={flipped ? "뒷면 · 누르면 앞면(장·절)" : "앞면 · 누르면 뒷면(본문)"}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); flip(); } }}
+        style={{ position: "relative", perspective: 1600, cursor: "pointer", userSelect: "none", WebkitTapHighlightColor: "transparent" }}>
+        <div style={{ display: "grid", transformStyle: "preserve-3d", transition: `transform ${reduceMo ? 0 : 110}ms ease-out`, transform: flipped ? "rotateY(180deg)" : "none" }}>
+          <Face>
+            <VerseLabel v={v} />
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: 24, fontWeight: 800, color: acc.deep, letterSpacing: ".06em" }}>{v.bookFull}</div>
               <div style={{ fontFamily: NUM, fontSize: 38, fontWeight: 700, color: acc.deep, lineHeight: 1.2 }}>{v.cv}</div>
@@ -4022,23 +4107,23 @@ function StepRecall({ v, onRate }) {
                 {v.verses.length > 1 ? `${v.verses.length}절을` : "이 구절을"} 소리 내어 끝까지 외워 보세요
               </div>
             </div>
-          ) : (
-            <div style={{ width: "100%", maxWidth: "34em" }}>
-              <div style={{ textAlign: "center", fontSize: 15, fontWeight: 800, color: acc.deep, marginBottom: 12 }}>{v.full}</div>
-              <div style={{ fontSize: 17, lineHeight: 2, color: "var(--c-ink)", wordBreak: "keep-all" }}>
-                {v.verses.map((vv) => (
-                  <span key={vv.v}>
-                    {v.verses.length > 1 && <sup style={{ fontFamily: NUM, fontSize: 12, color: acc.deep, marginRight: 3 }}>{vv.v}</sup>}
-                    {vv.t}{" "}
-                  </span>
-                ))}
-              </div>
+            <Hint>다 외웠으면 카드를 눌러 뒤집어 확인하세요</Hint>
+          </Face>
+          <Face back>
+            <VerseLabel v={v} />
+            <div style={{ width: "100%", maxWidth: "34em", fontSize: 17, lineHeight: 2, color: "var(--c-ink)", wordBreak: "keep-all" }}>
+              {v.verses.map((vv) => (
+                <span key={vv.v}>
+                  {v.verses.length > 1 && <sup style={{ fontFamily: NUM, fontSize: 12, color: acc.deep, marginRight: 3 }}>{vv.v}</sup>}
+                  {vv.t}{" "}
+                </span>
+              ))}
             </div>
-          )}
-          <Hint>{open ? "얼마나 정확했는지 골라 주세요" : "다 외웠으면 카드를 눌러 확인하세요"}</Hint>
-        </Face>
+            <Hint>얼마나 정확했는지 아래에서 골라 주세요 · 카드를 누르면 다시 앞면</Hint>
+          </Face>
+        </div>
       </div>
-      {open && (
+      {seen && (
         <div style={{ display: "flex", gap: 8 }}>
           {["good", "hard", "again"].map((r) => (
             <button key={r} onClick={() => onRate(r)}
