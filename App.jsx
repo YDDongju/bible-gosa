@@ -3033,6 +3033,7 @@ export default function App() {
         .chip { font-family:inherit; font-weight:700; font-size:13.5px; cursor:pointer; white-space:nowrap;
           flex:0 0 auto; padding:9px 15px; border-radius:2px; transition:background .15s ease, color .15s ease, border-color .15s ease; }
         .cardin { animation:cardin .18s ease-out; } @keyframes cardin { from{opacity:0; transform:translateY(5px)} to{opacity:1; transform:none} }
+        .face, .face * { -webkit-backface-visibility:hidden; backface-visibility:hidden; }
         .pop { animation:pop .22s ease-out; } @keyframes pop { 0%{transform:scale(.88)} 60%{transform:scale(1.06)} 100%{transform:scale(1)} }
                 @media (prefers-reduced-motion: reduce){ .cardin,.pop{ animation:none; } }
         .track{ -webkit-appearance:none; appearance:none; width:100%; height:22px; background:transparent; cursor:pointer; margin:0; }
@@ -3319,8 +3320,9 @@ const refStyle = { fontSize: 13.5, fontWeight: 700, color: C.goldDk, border: `1p
 function Face({ children, back }) {
   const acc = useAcc();
   return (
-    <div style={{ gridColumn: 1, gridRow: 1, backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden",
-      transform: back ? "rotateY(180deg)" : "none",
+    /* 아이폰 사파리 : 앞면에 3D 변환이 없으면 뒷면 숨김이 안 먹어서 앞면 버튼이 뒤집힌 채 비침 → 양면 모두 3D 변환 + 안쪽 요소도 숨김(.face) */
+    <div className="face" style={{ gridColumn: 1, gridRow: 1, backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden",
+      transform: back ? "rotateY(180deg) translateZ(1px)" : "rotateY(0deg) translateZ(1px)",
       background: `radial-gradient(130% 100% at 50% 40%, var(--c-bg1) 55%, var(--c-bg2) 100%)`,
       color: "var(--c-ink)", minHeight: 340, padding: "76px 30px 52px", borderRadius: 2,
       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18,
